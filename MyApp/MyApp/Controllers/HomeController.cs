@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using MyApp.Infrastructure.Data;
 using MyApp.Models;
+using MyApp.Models.Travel;
 
 namespace MyApp.Controllers
 {
@@ -13,9 +18,48 @@ namespace MyApp.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string filter = "futuros", string search = "")
         {
-            return View();
+            DateTime referenceDate = DateTime.UtcNow.Date;
+            List<TravelViewModel> travels = TravelDataStore.GetTravels();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                travels = travels
+                    .Where(travel => travel.Title.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter))
+            {
+                if (filter.Equals("futuros", StringComparison.OrdinalIgnoreCase))
+                {
+                    travels = travels
+                        .Where(travel => travel.IsUpcoming(referenceDate))
+                        .ToList();
+                }
+                else if (filter.Equals("pasados", StringComparison.OrdinalIgnoreCase))
+                {
+                    travels = travels
+                        .Where(travel => travel.IsPast(referenceDate))
+                        .ToList();
+                }
+                else if (filter.Equals("archivados", StringComparison.OrdinalIgnoreCase))
+                {
+                    travels = travels
+                        .Where(travel => travel.IsArchived)
+                        .ToList();
+                }
+            }
+
+            TravelDashboardViewModel viewModel = new TravelDashboardViewModel
+            {
+                Travels = travels,
+                SelectedFilter = filter,
+                SearchTerm = search
+            };
+
+            return View(viewModel);
         }
 
         public IActionResult Privacy()

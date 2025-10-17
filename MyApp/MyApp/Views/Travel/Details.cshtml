@@ -1,0 +1,181 @@
+@model TravelDetailViewModel
+@{
+    ViewData["Title"] = Model.Travel.Title;
+    int totalDays = Model.GetTotalDays();
+    int totalActivities = Model.GetTotalActivities();
+    decimal totalCost = Model.GetTotalCost();
+    decimal budgetDifference = Model.Travel.InitialBudget - totalCost;
+    string budgetBadgeClass = budgetDifference >= 0 ? "bg-success-subtle text-success-emphasis" : "bg-danger-subtle text-danger-emphasis";
+    string budgetBadgeLabel = budgetDifference >= 0 ? "Dentro de presupuesto" : "Sobre presupuesto";
+    string budgetStatusClass = budgetDifference >= 0 ? "mt-3 mb-0 text-success fw-semibold" : "mt-3 mb-0 text-danger fw-semibold";
+    System.Collections.Generic.List<TravelMilestoneViewModel> upcomingMilestones = Model.GetUpcomingMilestones();
+    System.Globalization.CultureInfo cultureInfo = System.Globalization.CultureInfo.CreateSpecificCulture("es-ES");
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="display-5 fw-bold mb-1">@Model.Travel.Title</h1>
+            <p class="text-muted mb-0">@Model.Travel.StartDate.ToString("dd MMM yyyy") – @Model.Travel.EndDate.ToString("dd MMM yyyy") · @Model.Travel.Destination</p>
+        </div>
+        <a class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Volver a mis viajes</a>
+    </div>
+
+    <div class="btn-group mb-4" role="group" aria-label="Navegación de viaje">
+        <button class="btn btn-primary" type="button">Resumen</button>
+        <button class="btn btn-outline-primary" type="button">Itinerario</button>
+        <button class="btn btn-outline-primary" type="button">Mapa</button>
+        <button class="btn btn-outline-primary" type="button">Presupuesto</button>
+        <button class="btn btn-outline-primary" type="button">Transportes</button>
+        <button class="btn btn-outline-primary" type="button">Alojamiento</button>
+        <button class="btn btn-outline-primary" type="button">Compartir</button>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase small mb-1">Duración</p>
+                    <h3 class="fw-bold mb-0">@totalDays días</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase small mb-1">Actividades</p>
+                    <h3 class="fw-bold mb-0">@totalActivities hitos</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase small mb-1">Coste total</p>
+                    <h3 class="fw-bold mb-0 text-primary">@totalCost.ToString("C")</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Presupuesto vs gasto</h5>
+                        <span class="badge @budgetBadgeClass">@budgetBadgeLabel</span>
+                    </div>
+                    <p class="mb-1">Presupuesto inicial: <strong>@Model.Travel.InitialBudget.ToString("C")</strong></p>
+                    <p class="mb-3">Gasto real: <strong class="text-primary">@totalCost.ToString("C")</strong></p>
+                    <div class="progress" style="height: 10px;">
+                        @{ decimal budgetProgress = Model.Travel.InitialBudget > 0 ? Math.Min(100m, Math.Round((totalCost / Model.Travel.InitialBudget) * 100, 0)) : 0m; }
+                        <div class="progress-bar @(totalCost > Model.Travel.InitialBudget ? "bg-danger" : "bg-success")" role="progressbar" style="width: @budgetProgress%;" aria-valuenow="@budgetProgress" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="@budgetStatusClass">
+                        @(budgetDifference >= 0 ? "Disponible" : "Exceso") @Math.Abs(budgetDifference).ToString("C")
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Alojamiento</h5>
+                    <p class="mb-1">Coste por noche: <strong>@Model.Travel.LodgingCostPerNight.ToString("C")</strong></p>
+                    <p class="mb-0">Total estimado en alojamiento: <strong>@(Model.Travel.LodgingCostPerNight * totalDays).ToString("C")</strong></p>
+                </div>
+                <div class="card-footer bg-white border-0 text-muted small">
+                    Alojamiento actual: consultado el @Model.ReferenceDate.ToString("dd MMM yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-xl-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Próximos eventos</h5>
+                    @if (upcomingMilestones.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No hay actividades programadas a futuro.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (TravelMilestoneViewModel milestone in upcomingMilestones)
+                            {
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="fw-semibold mb-1">@milestone.Title</h6>
+                                            <p class="text-muted mb-0">@milestone.Date.ToString("dddd, dd MMM", cultureInfo) · @milestone.GetStartDateTime().ToString("HH:mm") - @milestone.GetEndDateTime().ToString("HH:mm")</p>
+                                        </div>
+                                        <span class="badge bg-light text-primary border">@milestone.Cost.ToString("C")</span>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Participantes</h5>
+                    <ul class="list-group list-group-flush">
+                        @foreach (TravelParticipantViewModel participant in Model.Travel.Participants)
+                        {
+                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                <span>@participant.Email</span>
+                                <span class="badge bg-primary-subtle text-primary-emphasis">@participant.Role</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Hitos y actividades</h5>
+                <button class="btn btn-outline-primary btn-sm" type="button">Añadir hito</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Actividad</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Horario</th>
+                            <th scope="col">Ubicación</th>
+                            <th scope="col" class="text-end">Coste</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (TravelMilestoneViewModel milestone in Model.Travel.Milestones)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@milestone.Title</strong>
+                                    @if (!string.IsNullOrWhiteSpace(milestone.Notes))
+                                    {
+                                        <div class="text-muted small">@milestone.Notes</div>
+                                    }
+                                </td>
+                                <td>@milestone.Date.ToString("dd MMM yyyy")</td>
+                                <td>@milestone.GetStartDateTime().ToString("HH:mm") - @milestone.GetEndDateTime().ToString("HH:mm")</td>
+                                <td>@milestone.Location</td>
+                                <td class="text-end fw-semibold">@milestone.Cost.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

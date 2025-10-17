@@ -1,8 +1,264 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model TravelDashboardViewModel
+@{
+    ViewData["Title"] = "Mis viajes";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="display-5 fw-bold mb-1">Mis viajes</h1>
+            <p class="text-muted mb-0">Gestiona tus próximos destinos, revive los pasados y mantén todo tu itinerario en orden.</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#travelModal">
+            <i class="bi bi-plus-circle me-2"></i>Crear viaje
+        </button>
+    </div>
+
+    <form method="get" class="row g-3 align-items-end mb-4">
+        <div class="col-12 col-md-4">
+            <label class="form-label fw-semibold" for="filter">Filtrar</label>
+            @{
+                bool selectedFuturos = Model.SelectedFilter?.Equals("futuros", StringComparison.OrdinalIgnoreCase) == true;
+                bool selectedPasados = Model.SelectedFilter?.Equals("pasados", StringComparison.OrdinalIgnoreCase) == true;
+                bool selectedArchivados = Model.SelectedFilter?.Equals("archivados", StringComparison.OrdinalIgnoreCase) == true;
+                bool selectedTodos = Model.SelectedFilter?.Equals("todos", StringComparison.OrdinalIgnoreCase) == true;
+            }
+            <select class="form-select" id="filter" name="filter">
+                @if (selectedFuturos)
+                {
+                    <option value="futuros" selected>Futuros</option>
+                }
+                else
+                {
+                    <option value="futuros">Futuros</option>
+                }
+                @if (selectedPasados)
+                {
+                    <option value="pasados" selected>Pasados</option>
+                }
+                else
+                {
+                    <option value="pasados">Pasados</option>
+                }
+                @if (selectedArchivados)
+                {
+                    <option value="archivados" selected>Archivados</option>
+                }
+                else
+                {
+                    <option value="archivados">Archivados</option>
+                }
+                @if (selectedTodos)
+                {
+                    <option value="todos" selected>Todos</option>
+                }
+                else
+                {
+                    <option value="todos">Todos</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold" for="search">Buscar por nombre</label>
+            <input class="form-control" type="search" id="search" name="search" value="@Model.SearchTerm" placeholder="Ej. Aventura en Tokio" />
+        </div>
+        <div class="col-12 col-md-2 d-grid">
+            <button class="btn btn-outline-primary" type="submit">Aplicar</button>
+        </div>
+    </form>
+
+    @if (Model.Travels == null || !Model.Travels.Any())
+    {
+        <div class="text-center py-5 border rounded-4 bg-light">
+            <div class="mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" fill="none" viewBox="0 0 120 120">
+                    <rect width="120" height="120" rx="24" fill="#E9F2FF"></rect>
+                    <path d="M60 30L78 42V66L60 78L42 66V42L60 30Z" stroke="#2F6FED" stroke-width="4" stroke-linejoin="round" fill="#F7FBFF"></path>
+                    <path d="M48 60L60 68L72 60" stroke="#2F6FED" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </div>
+            <h2 class="fw-bold">Crea tu primer viaje</h2>
+            <p class="text-muted mb-4">Empieza planificando tu próxima aventura y controla hitos, presupuesto y actividades desde un solo lugar.</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#travelModal">Crear viaje</button>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive rounded-4 shadow-sm mb-5">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Viaje</th>
+                        <th scope="col">Inicio</th>
+                        <th scope="col">Fin</th>
+                        <th scope="col">Destino</th>
+                        <th scope="col">Coste total</th>
+                        <th scope="col">Presupuesto inicial</th>
+                        <th scope="col">Ranking</th>
+                        <th scope="col" class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (TravelViewModel travel in Model.Travels)
+                    {
+                        decimal totalCost = travel.GetTotalCost();
+                        <tr>
+                            <td class="fw-semibold">
+                                <a asp-controller="Travel" asp-action="Details" asp-route-id="@travel.Id" class="text-decoration-none">@travel.Title</a>
+                                @if (travel.IsUpcoming(DateTime.UtcNow))
+                                {
+                                    <span class="badge bg-info-subtle text-info-emphasis ms-2">Próximo</span>
+                                }
+                                else if (travel.IsArchived)
+                                {
+                                    <span class="badge bg-secondary ms-2">Archivado</span>
+                                }
+                            </td>
+                            <td>@travel.StartDate.ToString("dd MMM yyyy")</td>
+                            <td>@travel.EndDate.ToString("dd MMM yyyy")</td>
+                            <td>@travel.Destination</td>
+                            <td class="fw-semibold text-primary">@totalCost.ToString("C")</td>
+                            <td>@travel.InitialBudget.ToString("C")</td>
+                            <td>
+                                @if (travel.Ranking.HasValue)
+                                {
+                                    <span class="text-warning">
+                                        @for (int starIndex = 0; starIndex < travel.Ranking.Value; starIndex++)
+                                        {
+                                            @:★
+                                        }
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Sin ranking</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+                                    <a class="btn btn-sm btn-outline-primary" asp-controller="Travel" asp-action="Details" asp-route-id="@travel.Id">Abrir</a>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button">Duplicar</button>
+                                    <button class="btn btn-sm btn-outline-warning" type="button">Archivar</button>
+                                    <button class="btn btn-sm btn-outline-danger" type="button">Eliminar</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (TravelViewModel travel in Model.Travels)
+            {
+                decimal totalCost = travel.GetTotalCost();
+                int progress = travel.GetProgressPercentage(DateTime.UtcNow);
+                decimal balance = travel.InitialBudget - totalCost;
+                string balanceClass = balance >= 0 ? "text-success fw-semibold" : "text-danger fw-semibold";
+                string balanceLabel = balance >= 0 ? "Ahorras" : "Exceso";
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="card-title mb-1">@travel.Title</h5>
+                                    <p class="text-muted mb-0">@travel.StartDate.ToString("dd MMM") - @travel.EndDate.ToString("dd MMM yyyy")</p>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary-emphasis">@travel.Destination</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar" style="width: @progress%;" aria-valuenow="@progress" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p class="fw-semibold mb-1">Coste total: <span class="text-primary">@totalCost.ToString("C")</span></p>
+                            <p class="text-muted mb-2">Presupuesto estimado: @travel.InitialBudget.ToString("C")</p>
+                            <p class="@balanceClass">@balanceLabel @Math.Abs(balance).ToString("C")</p>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (TravelParticipantViewModel participant in travel.Participants)
+                                {
+                                    <span class="badge bg-light text-dark border">@participant.Email (@participant.Role)</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Travel" asp-action="Details" asp-route-id="@travel.Id">Ver detalle</a>
+                            <span class="text-muted small">Progreso @progress%</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div class="modal fade" id="travelModal" tabindex="-1" aria-labelledby="travelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="travelModalLabel">Crear viaje</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="travelTitle">Título del viaje<span class="text-danger">*</span></label>
+                        <input class="form-control" id="travelTitle" type="text" required placeholder="Ej. Aventura en Tokio" />
+                        <div class="form-text">Introduce un nombre único para identificar este viaje.</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold" for="startDate">Fecha inicio<span class="text-danger">*</span></label>
+                            <input class="form-control" id="startDate" type="date" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold" for="endDate">Fecha fin<span class="text-danger">*</span></label>
+                            <input class="form-control" id="endDate" type="date" required />
+                            <div class="form-text">La fecha de fin debe ser igual o posterior a la fecha de inicio.</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold" for="initialBudget">Presupuesto inicial</label>
+                        <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input class="form-control" id="initialBudget" type="number" min="0" step="0.01" placeholder="0,00" />
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold">Participantes</label>
+                        <div class="border rounded-3 p-3">
+                            <p class="text-muted small mb-2">Añade correos y roles de cada participante para coordinar responsabilidades.</p>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="participantEmail">Correo electrónico</label>
+                                    <input class="form-control" id="participantEmail" type="email" placeholder="persona@example.com" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="participantRole">Rol</label>
+                                    <input class="form-control" id="participantRole" type="text" placeholder="Organizador" />
+                                </div>
+                                <div class="col-md-2 d-grid">
+                                    <button class="btn btn-outline-primary" type="button">Añadir</button>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <ul class="list-group small">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        ana@example.com
+                                        <span class="badge bg-primary rounded-pill">Organizadora</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        luis@example.com
+                                        <span class="badge bg-secondary rounded-pill">Invitado</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary">Guardar viaje</button>
+            </div>
+        </div>
+    </div>
 </div>
