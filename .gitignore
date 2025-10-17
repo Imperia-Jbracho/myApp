@@ -1,7 +1,17 @@
 ################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
- 
+
 /.vs
-/MyApp/.vs/MyApp
-/MyApp/MyApp/obj
+/MyApp/.vs/
+
+# Build outputs
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
