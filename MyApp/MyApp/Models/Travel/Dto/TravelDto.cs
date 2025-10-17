@@ -8,6 +8,8 @@ namespace MyApp.Models.Travel.Dto
 
         public string Title { get; set; } = string.Empty;
 
+        public string Destination { get; set; } = string.Empty;
+
         public DateOnly StartDate { get; set; }
 
         public DateOnly EndDate { get; set; }
@@ -16,6 +18,14 @@ namespace MyApp.Models.Travel.Dto
 
         public int DurationDays { get; set; }
 
-        public List<string> Participants { get; set; } = new List<string>();
+        public decimal InitialBudget { get; set; }
+
+        public decimal TotalCost { get; set; }
+
+        public int? Ranking { get; set; }
+
+        public bool IsArchived { get; set; }
+
+        public List<TravelParticipantDto> Participants { get; set; } = new List<TravelParticipantDto>();
     }
 }

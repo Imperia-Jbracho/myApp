@@ -11,6 +11,9 @@ namespace MyApp.Models.Travel
         [MaxLength(254)]
         public string Email { get; set; } = string.Empty;
 
+        [MaxLength(100)]
+        public string Role { get; set; } = string.Empty;
+
         public int TravelId { get; set; }
 
         public Travel? Travel { get; set; }
