@@ -115,6 +115,198 @@
             });
         }
 
+        const summaryConfig = window.travelSummaryConfig ?? null;
+        if (summaryConfig) {
+            const travelIdValue = typeof summaryConfig.travelId === 'number' ? summaryConfig.travelId : Number.parseInt(summaryConfig.travelId, 10);
+            if (!Number.isNaN(travelIdValue)) {
+                const baseApiUrlValue = typeof summaryConfig.baseApiUrl === 'string' ? summaryConfig.baseApiUrl : '/api/travel';
+                const sanitizedBaseUrl = baseApiUrlValue.endsWith('/') ? baseApiUrlValue.slice(0, -1) : baseApiUrlValue;
+                const milestonesBaseUrl = `${sanitizedBaseUrl}/${travelIdValue}/milestones`;
+
+                bindMilestoneForm('[data-summary-form="activity"]', 'activity', `${milestonesBaseUrl}/activities`, buildActivityPayload, 'Actividad añadida correctamente.');
+                bindMilestoneForm('[data-summary-form="lodging"]', 'lodging', `${milestonesBaseUrl}/lodgings`, buildLodgingPayload, 'Alojamiento guardado correctamente.');
+                bindMilestoneForm('[data-summary-form="restaurant"]', 'restaurant', `${milestonesBaseUrl}/restaurants`, buildRestaurantPayload, 'Reserva registrada correctamente.');
+            }
+
+            function bindMilestoneForm(selector, errorKey, endpoint, payloadBuilder, successMessage) {
+                const form = document.querySelector(selector);
+                if (!form) {
+                    return;
+                }
+
+                const errorContainer = document.querySelector(`[data-summary-errors="${errorKey}"]`);
+
+                form.addEventListener('submit', async event => {
+                    event.preventDefault();
+                    resetSummaryErrors(errorContainer);
+
+                    const submitButton = form.querySelector('[type="submit"]');
+                    if (submitButton) {
+                        submitButton.setAttribute('disabled', 'disabled');
+                    }
+
+                    try {
+                        const payload = payloadBuilder(form);
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) {
+                            showToast(successMessage, 'success');
+                            window.location.reload();
+                            return;
+                        }
+
+                        const messages = await extractProblemMessages(response);
+                        showSummaryErrors(errorContainer, messages);
+                        showToast('No se pudo guardar la información.', 'error');
+                    } catch (error) {
+                        console.error(error);
+                        showSummaryErrors(errorContainer, ['Ocurrió un error inesperado.']);
+                        showToast('No se pudo guardar la información.', 'error');
+                    } finally {
+                        if (submitButton) {
+                            submitButton.removeAttribute('disabled');
+                        }
+                    }
+                });
+            }
+
+            function resetSummaryErrors(container) {
+                if (!container) {
+                    return;
+                }
+
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            }
+
+            function showSummaryErrors(container, messages) {
+                if (!container) {
+                    return;
+                }
+
+                const finalMessages = Array.isArray(messages) && messages.length > 0 ? messages : ['Revisa la información proporcionada.'];
+                container.innerHTML = finalMessages.map(message => `<p>${message}</p>`).join('');
+                container.classList.remove('hidden');
+            }
+
+            async function extractProblemMessages(response) {
+                try {
+                    const problem = await response.json();
+                    if (problem && problem.errors) {
+                        const messages = [];
+                        Object.keys(problem.errors).forEach(key => {
+                            const values = problem.errors[key];
+                            if (Array.isArray(values)) {
+                                values.forEach(message => messages.push(message));
+                            }
+                        });
+
+                        if (messages.length > 0) {
+                            return messages;
+                        }
+                    }
+
+                    if (problem && typeof problem.detail === 'string' && problem.detail.length > 0) {
+                        return [problem.detail];
+                    }
+                } catch (error) {
+                    console.error('No se pudo leer la respuesta del servidor.', error);
+                }
+
+                return ['No se pudo guardar la información. Intenta nuevamente.'];
+            }
+
+            function buildActivityPayload(form) {
+                const formData = new FormData(form);
+                const costValue = readOptionalDecimal(formData, 'activity-price');
+
+                return {
+                    title: readFormDataString(formData, 'activity-title'),
+                    date: readOptionalDate(formData, 'activity-date'),
+                    classification: readOptionalString(formData, 'activity-classification'),
+                    durationHours: readOptionalDecimal(formData, 'activity-duration'),
+                    startTime: readOptionalTime(formData, 'activity-start'),
+                    endTime: readOptionalTime(formData, 'activity-end'),
+                    cost: costValue ?? 0,
+                    locationUrl: readOptionalString(formData, 'activity-location')
+                };
+            }
+
+            function buildLodgingPayload(form) {
+                const formData = new FormData(form);
+                const costValue = readOptionalDecimal(formData, 'lodging-price');
+
+                return {
+                    title: readFormDataString(formData, 'lodging-title'),
+                    nights: readOptionalInteger(formData, 'lodging-nights'),
+                    checkInDate: readOptionalDate(formData, 'lodging-checkin'),
+                    checkOutDate: readOptionalDate(formData, 'lodging-checkout'),
+                    cost: costValue ?? 0,
+                    locationUrl: readOptionalString(formData, 'lodging-location'),
+                    bookingPlatform: readOptionalString(formData, 'lodging-platform')
+                };
+            }
+
+            function buildRestaurantPayload(form) {
+                const formData = new FormData(form);
+                const costValue = readOptionalDecimal(formData, 'restaurant-cost');
+
+                return {
+                    title: readFormDataString(formData, 'restaurant-name'),
+                    reservationDate: readOptionalDate(formData, 'restaurant-date'),
+                    startTime: readOptionalTime(formData, 'restaurant-time'),
+                    cost: costValue ?? 0,
+                    locationUrl: readOptionalString(formData, 'restaurant-location')
+                };
+            }
+
+            function readFormDataString(formData, key) {
+                const value = formData.get(key);
+                return typeof value === 'string' ? value.trim() : '';
+            }
+
+            function readOptionalString(formData, key) {
+                const value = readFormDataString(formData, key);
+                return value.length > 0 ? value : null;
+            }
+
+            function readOptionalDecimal(formData, key) {
+                const value = readFormDataString(formData, key);
+                if (value.length === 0) {
+                    return null;
+                }
+
+                const number = Number.parseFloat(value);
+                return Number.isNaN(number) ? null : number;
+            }
+
+            function readOptionalInteger(formData, key) {
+                const value = readFormDataString(formData, key);
+                if (value.length === 0) {
+                    return null;
+                }
+
+                const number = Number.parseInt(value, 10);
+                return Number.isNaN(number) ? null : number;
+            }
+
+            function readOptionalDate(formData, key) {
+                const value = readFormDataString(formData, key);
+                return value.length > 0 ? value : null;
+            }
+
+            function readOptionalTime(formData, key) {
+                const value = readFormDataString(formData, key);
+                return value.length > 0 ? value : null;
+            }
+        }
+
         function openModal(mode, travel) {
             currentMode = mode;
             resetErrors();
