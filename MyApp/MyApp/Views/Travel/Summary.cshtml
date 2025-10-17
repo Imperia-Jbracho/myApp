@@ -85,15 +85,16 @@
         <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
             <h2 class="text-lg font-semibold text-white">Añadir actividad</h2>
             <p class="mt-1 text-sm text-slate-400">Programa tours, visitas o experiencias con todos los detalles.</p>
-            <form class="mt-4 space-y-4" action="#" method="post">
+            <form class="mt-4 space-y-4" action="#" method="post" data-summary-form="activity">
+                <div class="hidden rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200" data-summary-errors="activity"></div>
                 <div>
                     <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-title">Título</label>
-                    <input id="activity-title" name="activity-title" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Tour por la ciudad" />
+                    <input id="activity-title" name="activity-title" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Tour por la ciudad" required />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-date">Fecha</label>
-                        <input id="activity-date" name="activity-date" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                        <input id="activity-date" name="activity-date" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" required />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-classification">Clasificación</label>
@@ -136,10 +137,11 @@
         <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
             <h2 class="text-lg font-semibold text-white">Registrar alojamiento</h2>
             <p class="mt-1 text-sm text-slate-400">Controla tus reservas, noches y plataforma de contratación.</p>
-            <form class="mt-4 space-y-4" action="#" method="post">
+            <form class="mt-4 space-y-4" action="#" method="post" data-summary-form="lodging">
+                <div class="hidden rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200" data-summary-errors="lodging"></div>
                 <div>
                     <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-title">Título</label>
-                    <input id="lodging-title" name="lodging-title" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Hotel Boutique Centro" />
+                    <input id="lodging-title" name="lodging-title" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Hotel Boutique Centro" required />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-3">
                     <div>
@@ -175,15 +177,16 @@
         <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
             <h2 class="text-lg font-semibold text-white">Reservar restaurante</h2>
             <p class="mt-1 text-sm text-slate-400">Registra tus comidas y controla el gasto gastronómico.</p>
-            <form class="mt-4 space-y-4" action="#" method="post">
+            <form class="mt-4 space-y-4" action="#" method="post" data-summary-form="restaurant">
+                <div class="hidden rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200" data-summary-errors="restaurant"></div>
                 <div>
                     <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-name">Nombre del restaurante</label>
-                    <input id="restaurant-name" name="restaurant-name" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Casa Lola" />
+                    <input id="restaurant-name" name="restaurant-name" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Casa Lola" required />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-date">Día de la reserva</label>
-                        <input id="restaurant-date" name="restaurant-date" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                        <input id="restaurant-date" name="restaurant-date" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" required />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-time">Hora</label>
@@ -420,3 +423,13 @@
         </div>
     </section>
 </div>
+
+@section Scripts
+{
+    <script>
+        window.travelSummaryConfig = {
+            travelId: @Model.Id,
+            baseApiUrl: '/api/travel'
+        };
+    </script>
+}
