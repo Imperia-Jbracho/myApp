@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Infrastructure.Data;
@@ -58,6 +59,25 @@ namespace MyApp.Controllers
                 SelectedFilter = filter,
                 SearchTerm = search
             };
+
+            IOrderedEnumerable<TravelViewModel> orderedTravels = travels
+                .OrderBy(travel => travel.StartDate);
+            TravelViewModel? highlightedTravel = orderedTravels.FirstOrDefault();
+
+            if (highlightedTravel != null)
+            {
+                ViewBag.ActiveTripId = highlightedTravel.Id.ToString();
+                ViewBag.ActiveTripDate = highlightedTravel.StartDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                int notifications = highlightedTravel.Milestones
+                    .Count(milestone => milestone.GetStartDateTime() >= referenceDate);
+                ViewBag.NotificationsCount = notifications;
+            }
+            else
+            {
+                ViewBag.ActiveTripId = null;
+                ViewBag.ActiveTripDate = null;
+                ViewBag.NotificationsCount = 0;
+            }
 
             return View(viewModel);
         }

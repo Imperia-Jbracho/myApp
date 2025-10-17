@@ -1,181 +1,261 @@
 @model TravelDetailViewModel
+@using System.Globalization
+@using System.Linq
 @{
     ViewData["Title"] = Model.Travel.Title;
+    CultureInfo cultureInfo = CultureInfo.CreateSpecificCulture("es-ES");
     int totalDays = Model.GetTotalDays();
     int totalActivities = Model.GetTotalActivities();
     decimal totalCost = Model.GetTotalCost();
     decimal budgetDifference = Model.Travel.InitialBudget - totalCost;
-    string budgetBadgeClass = budgetDifference >= 0 ? "bg-success-subtle text-success-emphasis" : "bg-danger-subtle text-danger-emphasis";
-    string budgetBadgeLabel = budgetDifference >= 0 ? "Dentro de presupuesto" : "Sobre presupuesto";
-    string budgetStatusClass = budgetDifference >= 0 ? "mt-3 mb-0 text-success fw-semibold" : "mt-3 mb-0 text-danger fw-semibold";
-    System.Collections.Generic.List<TravelMilestoneViewModel> upcomingMilestones = Model.GetUpcomingMilestones();
-    System.Globalization.CultureInfo cultureInfo = System.Globalization.CultureInfo.CreateSpecificCulture("es-ES");
+    bool budgetPositive = budgetDifference >= 0;
+    decimal budgetProgress = Model.Travel.InitialBudget > 0 ? Math.Min(100m, Math.Round((totalCost / Model.Travel.InitialBudget) * 100m, 0, MidpointRounding.AwayFromZero)) : 0m;
+    decimal lodgingTotal = Model.Travel.LodgingCostPerNight * totalDays;
+    List<TravelMilestoneViewModel> upcomingMilestones = Model.GetUpcomingMilestones();
 }
 
-<div class="container py-4">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="display-5 fw-bold mb-1">@Model.Travel.Title</h1>
-            <p class="text-muted mb-0">@Model.Travel.StartDate.ToString("dd MMM yyyy") – @Model.Travel.EndDate.ToString("dd MMM yyyy") · @Model.Travel.Destination</p>
-        </div>
-        <a class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Volver a mis viajes</a>
-    </div>
-
-    <div class="btn-group mb-4" role="group" aria-label="Navegación de viaje">
-        <button class="btn btn-primary" type="button">Resumen</button>
-        <button class="btn btn-outline-primary" type="button">Itinerario</button>
-        <button class="btn btn-outline-primary" type="button">Mapa</button>
-        <button class="btn btn-outline-primary" type="button">Presupuesto</button>
-        <button class="btn btn-outline-primary" type="button">Transportes</button>
-        <button class="btn btn-outline-primary" type="button">Alojamiento</button>
-        <button class="btn btn-outline-primary" type="button">Compartir</button>
-    </div>
-
-    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
-        <div class="col">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-muted text-uppercase small mb-1">Duración</p>
-                    <h3 class="fw-bold mb-0">@totalDays días</h3>
-                </div>
+<div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="space-y-3">
+            <a asp-controller="Home" asp-action="Index" class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500 transition hover:text-brand-300">
+                <i data-lucide="arrow-left" class="size-4"></i>
+                Volver a mis viajes
+            </a>
+            <div class="space-y-2">
+                <h1 class="text-4xl font-bold text-white sm:text-5xl">@Model.Travel.Title</h1>
+                <p class="text-sm uppercase tracking-widest text-slate-400">
+                    @Model.Travel.StartDate.ToString("dd MMM yyyy", cultureInfo) — @Model.Travel.EndDate.ToString("dd MMM yyyy", cultureInfo) · @Model.Travel.Destination
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-3 text-xs uppercase tracking-widest text-slate-400">
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                    <i data-lucide="calendar-check" class="size-3.5"></i>
+                    @totalDays día@(totalDays == 1 ? string.Empty : "s")
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                    <i data-lucide="check-circle-2" class="size-3.5"></i>
+                    @totalActivities actividad@(totalActivities == 1 ? string.Empty : "es")
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-brand-400/40 bg-brand-500/10 px-3 py-1 text-brand-200">
+                    <i data-lucide="wallet" class="size-3.5"></i>
+                    Presupuesto inicial @Model.Travel.InitialBudget.ToString("C", cultureInfo)
+                </span>
             </div>
         </div>
-        <div class="col">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-muted text-uppercase small mb-1">Actividades</p>
-                    <h3 class="fw-bold mb-0">@totalActivities hitos</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-muted text-uppercase small mb-1">Coste total</p>
-                    <h3 class="fw-bold mb-0 text-primary">@totalCost.ToString("C")</h3>
-                </div>
-            </div>
+        <div class="flex flex-col gap-3 sm:flex-row">
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                <i data-lucide="share-2" class="size-4"></i>
+                Compartir
+            </button>
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-glow transition hover:bg-brand-600">
+                <i data-lucide="plus" class="size-4"></i>
+                Añadir hito
+            </button>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Presupuesto vs gasto</h5>
-                        <span class="badge @budgetBadgeClass">@budgetBadgeLabel</span>
-                    </div>
-                    <p class="mb-1">Presupuesto inicial: <strong>@Model.Travel.InitialBudget.ToString("C")</strong></p>
-                    <p class="mb-3">Gasto real: <strong class="text-primary">@totalCost.ToString("C")</strong></p>
-                    <div class="progress" style="height: 10px;">
-                        @{ decimal budgetProgress = Model.Travel.InitialBudget > 0 ? Math.Min(100m, Math.Round((totalCost / Model.Travel.InitialBudget) * 100, 0)) : 0m; }
-                        <div class="progress-bar @(totalCost > Model.Travel.InitialBudget ? "bg-danger" : "bg-success")" role="progressbar" style="width: @budgetProgress%;" aria-valuenow="@budgetProgress" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <p class="@budgetStatusClass">
-                        @(budgetDifference >= 0 ? "Disponible" : "Exceso") @Math.Abs(budgetDifference).ToString("C")
-                    </p>
-                </div>
-            </div>
+    <div class="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-2 shadow-glow">
+        <nav class="flex flex-wrap gap-2">
+            <a href="#" class="group inline-flex items-center gap-2 rounded-2xl bg-brand-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-brand-200 transition hover:bg-brand-500 hover:text-white">
+                <i data-lucide="sparkles" class="size-4"></i>
+                Resumen
+            </a>
+            <a href="#" class="group inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                <i data-lucide="calendar" class="size-4"></i>
+                Itinerario
+            </a>
+            <a href="#" class="group inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                <i data-lucide="map" class="size-4"></i>
+                Mapa
+            </a>
+            <a href="#" class="group inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                <i data-lucide="wallet" class="size-4"></i>
+                Presupuesto
+            </a>
+            <a href="#" class="group inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                <i data-lucide="plane" class="size-4"></i>
+                Transportes
+            </a>
+            <a href="#" class="group inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                <i data-lucide="bed" class="size-4"></i>
+                Alojamiento
+            </a>
+        </nav>
+    </div>
+
+    <div class="mt-10 grid gap-6 md:grid-cols-3">
+        <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-brand-500/20 via-brand-500/10 to-slate-900/60 p-6 shadow-lg shadow-brand-500/10">
+            <p class="text-xs uppercase tracking-widest text-slate-400">Duración</p>
+            <p class="mt-2 text-3xl font-semibold text-white">@totalDays día@(totalDays == 1 ? string.Empty : "s")</p>
+            <p class="mt-3 text-sm text-slate-400">Incluye todos los días completos del viaje.</p>
         </div>
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title mb-3">Alojamiento</h5>
-                    <p class="mb-1">Coste por noche: <strong>@Model.Travel.LodgingCostPerNight.ToString("C")</strong></p>
-                    <p class="mb-0">Total estimado en alojamiento: <strong>@(Model.Travel.LodgingCostPerNight * totalDays).ToString("C")</strong></p>
-                </div>
-                <div class="card-footer bg-white border-0 text-muted small">
-                    Alojamiento actual: consultado el @Model.ReferenceDate.ToString("dd MMM yyyy")
-                </div>
-            </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30">
+            <p class="text-xs uppercase tracking-widest text-slate-400">Actividades</p>
+            <p class="mt-2 text-3xl font-semibold text-white">@totalActivities hito@(totalActivities == 1 ? string.Empty : "s")</p>
+            <p class="mt-3 text-sm text-slate-400">Eventos planificados con horario y ubicación definidos.</p>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30">
+            <p class="text-xs uppercase tracking-widest text-slate-400">Coste total</p>
+            <p class="mt-2 text-3xl font-semibold text-white">@totalCost.ToString("C", cultureInfo)</p>
+            <p class="mt-3 text-sm text-slate-400">Suma acumulada de todos los hitos del viaje.</p>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-xl-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title mb-3">Próximos eventos</h5>
-                    @if (upcomingMilestones.Count == 0)
+    <div class="mt-10 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-slate-400">Presupuesto vs gasto</p>
+                    <p class="mt-2 text-2xl font-semibold text-white">@totalCost.ToString("C", cultureInfo)</p>
+                </div>
+                <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest @(budgetPositive ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-300" : "border-rose-400/40 bg-rose-500/10 text-rose-300")">
+                    <i data-lucide="activity" class="size-4"></i>
+                    @(budgetPositive ? "Dentro" : "Exceso")
+                </span>
+            </div>
+            <div class="mt-6 grid gap-4 text-sm text-slate-300 sm:grid-cols-2">
+                <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                    <p class="text-xs uppercase tracking-widest text-slate-500">Presupuesto inicial</p>
+                    <p class="mt-2 text-base font-semibold text-white">@Model.Travel.InitialBudget.ToString("C", cultureInfo)</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                    <p class="text-xs uppercase tracking-widest text-slate-500">Diferencia</p>
+                    <p class="mt-2 text-base font-semibold @(budgetPositive ? "text-emerald-400" : "text-rose-400")">@(budgetPositive ? "+" : "-")@Math.Abs(budgetDifference).ToString("C", cultureInfo)</p>
+                </div>
+            </div>
+            <div class="mt-6">
+                <div class="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                    <div class="h-full rounded-full @(budgetPositive ? "bg-emerald-400" : "bg-rose-400")" style="width: @budgetProgress%;"></div>
+                </div>
+                <p class="mt-3 text-xs uppercase tracking-widest text-slate-500">@budgetProgress% del presupuesto utilizado</p>
+            </div>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-slate-400">Alojamiento</p>
+                    <p class="mt-2 text-2xl font-semibold text-white">@Model.Travel.LodgingCostPerNight.ToString("C", cultureInfo) / noche</p>
+                </div>
+                <span class="inline-flex items-center gap-2 rounded-full border border-brand-400/40 bg-brand-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-200">
+                    <i data-lucide="bed-double" class="size-4"></i>
+                    Confirmado
+                </span>
+            </div>
+            <p class="mt-4 text-sm text-slate-400">Estancia estimada de @totalDays noche@(totalDays == 1 ? string.Empty : "s") en alojamiento seleccionado.</p>
+            <div class="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                <p class="text-xs uppercase tracking-widest text-slate-500">Total estimado</p>
+                <p class="mt-2 text-base font-semibold text-white">@lodgingTotal.ToString("C", cultureInfo)</p>
+            </div>
+            <p class="mt-6 text-xs uppercase tracking-widest text-slate-500">Actualizado el @Model.ReferenceDate.ToString("dd MMM yyyy", cultureInfo)</p>
+        </div>
+    </div>
+
+    <div class="mt-10 grid gap-6 xl:grid-cols-3">
+        <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30 xl:col-span-2">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-slate-400">Próximos eventos</p>
+                    <h2 class="mt-2 text-xl font-semibold text-white">Recordatorios inmediatos</h2>
+                </div>
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                    <i data-lucide="clock" class="size-4"></i>
+                    @upcomingMilestones.Count pendiente@(upcomingMilestones.Count == 1 ? string.Empty : "s")
+                </span>
+            </div>
+            @if (upcomingMilestones.Count == 0)
+            {
+                <div class="mt-6 rounded-2xl border border-dashed border-white/10 bg-slate-900/40 p-8 text-center text-sm text-slate-400">
+                    No hay actividades futuras programadas. Añade un nuevo hito para mantener el itinerario actualizado.
+                </div>
+            }
+            else
+            {
+                <ul class="mt-6 space-y-4">
+                    @foreach (TravelMilestoneViewModel milestone in upcomingMilestones)
                     {
-                        <p class="text-muted mb-0">No hay actividades programadas a futuro.</p>
+                        <li class="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition hover:border-brand-500/40 hover:bg-brand-500/5">
+                            <div class="flex items-center gap-4">
+                                <span class="flex size-12 items-center justify-center rounded-2xl bg-white/10 text-lg font-semibold text-white">@milestone.Date.ToString("dd", cultureInfo)</span>
+                                <div>
+                                    <p class="text-base font-semibold text-white">@milestone.Title</p>
+                                    <p class="text-xs uppercase tracking-widest text-slate-500">@milestone.Date.ToString("dddd, dd MMM", cultureInfo) · @milestone.GetStartDateTime().ToString("HH:mm") - @milestone.GetEndDateTime().ToString("HH:mm") · @milestone.Location</p>
+                                </div>
+                            </div>
+                            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-semibold text-white">@milestone.Cost.ToString("C", cultureInfo)</span>
+                        </li>
                     }
-                    else
-                    {
-                        <ul class="list-group list-group-flush">
-                            @foreach (TravelMilestoneViewModel milestone in upcomingMilestones)
-                            {
-                                <li class="list-group-item px-0">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="fw-semibold mb-1">@milestone.Title</h6>
-                                            <p class="text-muted mb-0">@milestone.Date.ToString("dddd, dd MMM", cultureInfo) · @milestone.GetStartDateTime().ToString("HH:mm") - @milestone.GetEndDateTime().ToString("HH:mm")</p>
-                                        </div>
-                                        <span class="badge bg-light text-primary border">@milestone.Cost.ToString("C")</span>
-                                    </div>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </div>
+                </ul>
+            }
         </div>
-        <div class="col-12 col-xl-5">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title mb-3">Participantes</h5>
-                    <ul class="list-group list-group-flush">
-                        @foreach (TravelParticipantViewModel participant in Model.Travel.Participants)
-                        {
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span>@participant.Email</span>
-                                <span class="badge bg-primary-subtle text-primary-emphasis">@participant.Role</span>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30">
+            <p class="text-xs uppercase tracking-widest text-slate-400">Participantes</p>
+            <h2 class="mt-2 text-xl font-semibold text-white">Equipo de viaje</h2>
+            <ul class="mt-6 space-y-3">
+                @foreach (TravelParticipantViewModel participant in Model.Travel.Participants)
+                {
+                    string participantInitial = string.IsNullOrEmpty(participant.Email) ? "?" : participant.Email.Substring(0, 1).ToUpperInvariant();
+                    <li class="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-slate-200">
+                        <div class="flex items-center gap-3">
+                            <span class="flex size-10 items-center justify-center rounded-full bg-brand-500/15 text-sm font-semibold text-brand-200">@participantInitial</span>
+                            <div>
+                                <p class="text-sm font-semibold text-white">@participant.Email</p>
+                                <p class="text-xs uppercase tracking-widest text-slate-500">@participant.Role</p>
+                            </div>
+                        </div>
+                        <button type="button" class="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-400 transition hover:bg-white/10">Contactar</button>
+                    </li>
+                }
+            </ul>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0">Hitos y actividades</h5>
-                <button class="btn btn-outline-primary btn-sm" type="button">Añadir hito</button>
+    <div class="mt-10 rounded-3xl border border-white/10 bg-slate-900/60 shadow-lg shadow-slate-900/30">
+        <div class="flex flex-col gap-4 border-b border-white/10 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-400">Hitos y actividades</p>
+                <h2 class="mt-1 text-xl font-semibold text-white">Detalle del itinerario</h2>
             </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">Actividad</th>
-                            <th scope="col">Fecha</th>
-                            <th scope="col">Horario</th>
-                            <th scope="col">Ubicación</th>
-                            <th scope="col" class="text-end">Coste</th>
+            <div class="flex gap-2">
+                <button type="button" class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 transition hover:bg-white/10">
+                    <i data-lucide="download" class="size-4"></i>
+                    Exportar
+                </button>
+                <button type="button" class="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-brand-600">
+                    <i data-lucide="plus" class="size-4"></i>
+                    Añadir hito
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-white/5 text-left text-sm text-slate-300">
+                <thead class="bg-white/5 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-4">Actividad</th>
+                        <th scope="col" class="px-6 py-4">Fecha</th>
+                        <th scope="col" class="px-6 py-4">Horario</th>
+                        <th scope="col" class="px-6 py-4">Ubicación</th>
+                        <th scope="col" class="px-6 py-4 text-right">Coste</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @foreach (TravelMilestoneViewModel milestone in Model.Travel.Milestones.OrderBy(milestone => milestone.GetStartDateTime()))
+                    {
+                        <tr class="transition hover:bg-white/5">
+                            <td class="px-6 py-5">
+                                <p class="text-sm font-semibold text-white">@milestone.Title</p>
+                                @if (!string.IsNullOrWhiteSpace(milestone.Notes))
+                                {
+                                    <p class="mt-1 text-xs text-slate-500">@milestone.Notes</p>
+                                }
+                            </td>
+                            <td class="px-6 py-5">@milestone.Date.ToString("dd MMM yyyy", cultureInfo)</td>
+                            <td class="px-6 py-5">@milestone.GetStartDateTime().ToString("HH:mm") - @milestone.GetEndDateTime().ToString("HH:mm")</td>
+                            <td class="px-6 py-5">@milestone.Location</td>
+                            <td class="px-6 py-5 text-right text-sm font-semibold text-white">@milestone.Cost.ToString("C", cultureInfo)</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (TravelMilestoneViewModel milestone in Model.Travel.Milestones)
-                        {
-                            <tr>
-                                <td>
-                                    <strong>@milestone.Title</strong>
-                                    @if (!string.IsNullOrWhiteSpace(milestone.Notes))
-                                    {
-                                        <div class="text-muted small">@milestone.Notes</div>
-                                    }
-                                </td>
-                                <td>@milestone.Date.ToString("dd MMM yyyy")</td>
-                                <td>@milestone.GetStartDateTime().ToString("HH:mm") - @milestone.GetEndDateTime().ToString("HH:mm")</td>
-                                <td>@milestone.Location</td>
-                                <td class="text-end fw-semibold">@milestone.Cost.ToString("C")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
