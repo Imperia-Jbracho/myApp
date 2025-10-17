@@ -1,8 +1,10 @@
 # Project Guidelines
 
 ## Architecture
-- Use Clean Architecture.
-- Organize layers as **Domain**, **Application**, **Infrastructure**, and **API**.
+- Use Clean Architecture.## Build
+- After completing any request, always attempt to run `dotnet build`.
+- Whenever there is a change to an entity, apply the necessary Entity Framework migrations.
+
 - Use Entity Framework Core for data access.
 - Store configuration in `appsettings.json`.
 - Implement RESTful controllers with validation and DTOs.
