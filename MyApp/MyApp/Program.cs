@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MyApp.Infrastructure.Data;
 
 namespace MyApp
@@ -16,6 +17,12 @@ namespace MyApp
             });
 
             WebApplication app = builder.Build();
+
+            using (IServiceScope scope = app.Services.CreateScope())
+            {
+                ApplicationDbContext context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                context.Database.Migrate();
+            }
 
             if (!app.Environment.IsDevelopment())
             {
