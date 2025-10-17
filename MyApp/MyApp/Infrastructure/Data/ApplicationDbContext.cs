@@ -14,6 +14,8 @@ namespace MyApp.Infrastructure.Data
 
         public DbSet<TravelParticipant> TravelParticipants { get; set; }
 
+        public DbSet<TravelMilestone> TravelMilestones { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -24,11 +26,16 @@ namespace MyApp.Infrastructure.Data
                 builder.Property(travel => travel.Title)
                     .IsRequired()
                     .HasMaxLength(150);
+                builder.Property(travel => travel.Destination)
+                    .IsRequired()
+                    .HasMaxLength(150);
                 builder.Property(travel => travel.Currency)
                     .IsRequired()
                     .HasMaxLength(10);
                 builder.Property(travel => travel.DurationDays)
                     .IsRequired();
+                builder.Property(travel => travel.InitialBudget)
+                    .HasColumnType("decimal(18,2)");
                 builder.Property(travel => travel.StartDate)
                     .HasColumnType("date");
                 builder.Property(travel => travel.EndDate)
@@ -36,6 +43,10 @@ namespace MyApp.Infrastructure.Data
                 builder.HasMany(travel => travel.Participants)
                     .WithOne(participant => participant.Travel)
                     .HasForeignKey(participant => participant.TravelId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                builder.HasMany(travel => travel.Milestones)
+                    .WithOne(milestone => milestone.Travel)
+                    .HasForeignKey(milestone => milestone.TravelId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -45,6 +56,23 @@ namespace MyApp.Infrastructure.Data
                 builder.Property(participant => participant.Email)
                     .IsRequired()
                     .HasMaxLength(254);
+                builder.Property(participant => participant.Role)
+                    .HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<TravelMilestone>(builder =>
+            {
+                builder.ToTable("TravelMilestones");
+                builder.Property(milestone => milestone.Title)
+                    .HasMaxLength(200);
+                builder.Property(milestone => milestone.Date)
+                    .HasColumnType("date");
+                builder.Property(milestone => milestone.StartTime)
+                    .HasColumnType("time");
+                builder.Property(milestone => milestone.EndTime)
+                    .HasColumnType("time");
+                builder.Property(milestone => milestone.Cost)
+                    .HasColumnType("decimal(18,2)");
             });
         }
     }

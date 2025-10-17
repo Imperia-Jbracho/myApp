@@ -16,9 +16,20 @@ namespace MyApp.Models.Travel.Dto
         public DateOnly? EndDate { get; set; }
 
         [Required]
+        [MaxLength(150)]
+        public string Destination { get; set; } = string.Empty;
+
+        [Required]
         [MaxLength(10)]
         public string Currency { get; set; } = string.Empty;
 
-        public List<string> Participants { get; set; } = new List<string>();
+        [Range(0, double.MaxValue)]
+        public decimal? InitialBudget { get; set; }
+
+        public int? Ranking { get; set; }
+
+        public bool? IsArchived { get; set; }
+
+        public List<TravelParticipantRequest> Participants { get; set; } = new List<TravelParticipantRequest>();
     }
 }
