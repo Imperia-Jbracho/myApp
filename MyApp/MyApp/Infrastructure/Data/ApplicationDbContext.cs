@@ -63,9 +63,17 @@ namespace MyApp.Infrastructure.Data
             modelBuilder.Entity<TravelMilestone>(builder =>
             {
                 builder.ToTable("TravelMilestones");
+                builder.Property(milestone => milestone.Type)
+                    .IsRequired();
                 builder.Property(milestone => milestone.Title)
                     .HasMaxLength(200);
                 builder.Property(milestone => milestone.Date)
+                    .HasColumnType("date");
+                builder.Property(milestone => milestone.ReservationDate)
+                    .HasColumnType("date");
+                builder.Property(milestone => milestone.CheckInDate)
+                    .HasColumnType("date");
+                builder.Property(milestone => milestone.CheckOutDate)
                     .HasColumnType("date");
                 builder.Property(milestone => milestone.StartTime)
                     .HasColumnType("time");
@@ -73,6 +81,14 @@ namespace MyApp.Infrastructure.Data
                     .HasColumnType("time");
                 builder.Property(milestone => milestone.Cost)
                     .HasColumnType("decimal(18,2)");
+                builder.Property(milestone => milestone.NightlyRate)
+                    .HasColumnType("decimal(18,2)");
+                builder.Property(milestone => milestone.LocationUrl)
+                    .HasMaxLength(500);
+                builder.Property(milestone => milestone.Classification)
+                    .HasMaxLength(200);
+                builder.Property(milestone => milestone.BookingPlatform)
+                    .HasMaxLength(150);
             });
         }
     }

@@ -13,5 +13,9 @@ namespace MyApp.Models.Travel.ViewModels
         public TimeOnly EndTime { get; set; }
 
         public decimal Cost { get; set; }
+
+        public TravelMilestoneType Type { get; set; }
+
+        public string? LocationUrl { get; set; }
     }
 }

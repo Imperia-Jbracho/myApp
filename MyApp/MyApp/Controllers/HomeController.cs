@@ -131,6 +131,9 @@ namespace MyApp.Controllers
             decimal totalCost = travel.Milestones
                 .Sum(milestone => milestone.Cost);
 
+            int activitiesCount = travel.Milestones
+                .Count(milestone => milestone.Type == TravelMilestoneType.Activity);
+
             List<TravelParticipantViewModel> participants = travel.Participants
                 .OrderBy(participant => participant.Email)
                 .Select(participant => new TravelParticipantViewModel
@@ -157,7 +160,7 @@ namespace MyApp.Controllers
                 IsPast = isPast,
                 IsOngoing = isOngoing,
                 ProgressPercentage = progress,
-                ActivitiesCount = travel.Milestones.Count,
+                ActivitiesCount = activitiesCount,
                 Participants = participants
             };
 

@@ -1,4 +1,5 @@
 @using System.Globalization
+@using MyApp.Models.Travel
 @model TravelSummaryViewModel
 
 @{
@@ -9,6 +10,18 @@
     string initialBudget = string.Format(culture, "{0:N2} {1}", Model.InitialBudget, Model.Currency);
     string difference = string.Format(culture, "{0:N2} {1}", Model.BudgetDifference, Model.Currency);
     bool overBudget = Model.BudgetDifference > 0m;
+    string lodgingNightlyRate = string.Format(culture, "{0:N2} {1}", Model.LodgingNightlyRate, Model.Currency);
+    string lodgingCheckIn = Model.LodgingCheckInDate.HasValue ? Model.LodgingCheckInDate.Value.ToString("dd MMM yyyy", culture) : "Sin fecha";
+    string lodgingCheckOut = Model.LodgingCheckOutDate.HasValue ? Model.LodgingCheckOutDate.Value.ToString("dd MMM yyyy", culture) : "Sin fecha";
+    string lodgingPlatform = string.IsNullOrWhiteSpace(Model.LodgingBookingPlatform) ? "No registrada" : Model.LodgingBookingPlatform;
+    Func<TimeOnly?, string> formatTime = time => time.HasValue ? time.Value.ToString("HH:mm", culture) : "--";
+    Func<TravelMilestoneType, string> milestoneTypeLabel = type => type switch
+    {
+        TravelMilestoneType.Activity => "Actividad",
+        TravelMilestoneType.Lodging => "Alojamiento",
+        TravelMilestoneType.Restaurant => "Restaurante",
+        _ => "Evento"
+    };
 }
 
 <div class="space-y-10">
@@ -25,19 +38,29 @@
                 <span class="rounded-full border border-white/10 px-4 py-2 text-slate-300">Actividades: <span class="text-white">@Model.ActivitiesCount</span></span>
             </div>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
             <div class="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-                <p class="text-xs uppercase tracking-widest text-slate-500">Contador de días</p>
+                <p class="text-xs uppercase tracking-widest text-slate-500">Días totales</p>
                 <p class="mt-2 text-3xl font-semibold text-white">@Model.DurationDays</p>
                 <p class="text-xs text-slate-400">Del @startDate al @endDate</p>
             </div>
             <div class="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-                <p class="text-xs uppercase tracking-widest text-slate-500">Total de actividades</p>
-                <p class="mt-2 text-3xl font-semibold text-white">@Model.ActivitiesCount</p>
-                <p class="text-xs text-slate-400">Incluye hitos y eventos planificados</p>
+                <p class="text-xs uppercase tracking-widest text-slate-500">Días transcurridos</p>
+                <p class="mt-2 text-3xl font-semibold text-white">@Model.DaysElapsed</p>
+                <p class="text-xs text-slate-400">Actualizado al @DateOnly.FromDateTime(DateTime.UtcNow).ToString("dd MMM", culture)</p>
             </div>
             <div class="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-                <p class="text-xs uppercase tracking-widest text-slate-500">Coste acumulado</p>
+                <p class="text-xs uppercase tracking-widest text-slate-500">Días restantes</p>
+                <p class="mt-2 text-3xl font-semibold text-white">@Model.DaysRemaining</p>
+                <p class="text-xs text-slate-400">Aún por disfrutar</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
+                <p class="text-xs uppercase tracking-widest text-slate-500">Total de actividades</p>
+                <p class="mt-2 text-3xl font-semibold text-white">@Model.ActivitiesCount</p>
+                <p class="text-xs text-slate-400">Incluye experiencias y tours planificados</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
+                <p class="text-xs uppercase tracking-widest text-slate-500">Suma de costes</p>
                 <p class="mt-2 text-3xl font-semibold text-brand-200">@totalCost</p>
                 <p class="text-xs @(overBudget ? "text-red-300" : "text-emerald-300")">@(overBudget ? "Sobre el presupuesto" : "Dentro del presupuesto")</p>
             </div>
@@ -52,12 +75,135 @@
         <div class="flex flex-wrap gap-3">
             <button class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-brand-500 hover:text-brand-200">Itinerario</button>
             <button class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-brand-500 hover:text-brand-200">Mapa</button>
-            <button class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-brand-500 hover:text-brand-200">Presupuesto</button>
             <button class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-brand-500 hover:text-brand-200">Transportes</button>
             <button class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-brand-500 hover:text-brand-200">Alojamiento</button>
             <button class="rounded-full border border-brand-500/40 px-4 py-2 text-xs font-semibold text-brand-200 transition hover:border-brand-500 hover:text-brand-50">Compartir</button>
         </div>
     </header>
+
+    <section class="grid gap-6 lg:grid-cols-3">
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
+            <h2 class="text-lg font-semibold text-white">Añadir actividad</h2>
+            <p class="mt-1 text-sm text-slate-400">Programa tours, visitas o experiencias con todos los detalles.</p>
+            <form class="mt-4 space-y-4" action="#" method="post">
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-title">Título</label>
+                    <input id="activity-title" name="activity-title" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Tour por la ciudad" />
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-date">Fecha</label>
+                        <input id="activity-date" name="activity-date" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-classification">Clasificación</label>
+                        <select id="activity-classification" name="activity-classification" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none">
+                            <option value="">Selecciona</option>
+                            <option value="Aventura">Aventura</option>
+                            <option value="Cultura">Cultura</option>
+                            <option value="Gastronomía">Gastronomía</option>
+                            <option value="Relax">Relax</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-duration">Duración (h)</label>
+                        <input id="activity-duration" name="activity-duration" type="number" min="0" step="0.5" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="3" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-start">Hora inicio</label>
+                        <input id="activity-start" name="activity-start" type="time" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-end">Hora fin</label>
+                        <input id="activity-end" name="activity-end" type="time" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-price">Precio</label>
+                        <input id="activity-price" name="activity-price" type="number" min="0" step="0.01" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="45" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="activity-location">Ubicación (Google Maps)</label>
+                        <input id="activity-location" name="activity-location" type="url" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="https://maps.google.com/..." />
+                    </div>
+                </div>
+                <button type="submit" class="w-full rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400">Añadir actividad</button>
+            </form>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
+            <h2 class="text-lg font-semibold text-white">Registrar alojamiento</h2>
+            <p class="mt-1 text-sm text-slate-400">Controla tus reservas, noches y plataforma de contratación.</p>
+            <form class="mt-4 space-y-4" action="#" method="post">
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-title">Título</label>
+                    <input id="lodging-title" name="lodging-title" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Hotel Boutique Centro" />
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-nights">Noches</label>
+                        <input id="lodging-nights" name="lodging-nights" type="number" min="0" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="4" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-checkin">Check-in</label>
+                        <input id="lodging-checkin" name="lodging-checkin" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-checkout">Check-out</label>
+                        <input id="lodging-checkout" name="lodging-checkout" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-price">Precio total</label>
+                        <input id="lodging-price" name="lodging-price" type="number" min="0" step="0.01" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="320" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-location">Ubicación (Google Maps)</label>
+                        <input id="lodging-location" name="lodging-location" type="url" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="https://maps.google.com/..." />
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="lodging-platform">Plataforma de reserva</label>
+                    <input id="lodging-platform" name="lodging-platform" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Booking, Airbnb..." />
+                </div>
+                <button type="submit" class="w-full rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400">Guardar alojamiento</button>
+            </form>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
+            <h2 class="text-lg font-semibold text-white">Reservar restaurante</h2>
+            <p class="mt-1 text-sm text-slate-400">Registra tus comidas y controla el gasto gastronómico.</p>
+            <form class="mt-4 space-y-4" action="#" method="post">
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-name">Nombre del restaurante</label>
+                    <input id="restaurant-name" name="restaurant-name" type="text" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="Casa Lola" />
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-date">Día de la reserva</label>
+                        <input id="restaurant-date" name="restaurant-date" type="date" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-time">Hora</label>
+                        <input id="restaurant-time" name="restaurant-time" type="time" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-cost">Gasto estimado</label>
+                        <input id="restaurant-cost" name="restaurant-cost" type="number" min="0" step="0.01" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="60" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-widest text-slate-400" for="restaurant-location">Ubicación (Google Maps)</label>
+                        <input id="restaurant-location" name="restaurant-location" type="url" class="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:border-brand-400 focus:outline-none" placeholder="https://maps.google.com/..." />
+                    </div>
+                </div>
+                <button type="submit" class="w-full rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400">Añadir reserva</button>
+            </form>
+        </div>
+    </section>
 
     <section class="grid gap-6 lg:grid-cols-3">
         <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg lg:col-span-2">
@@ -91,8 +237,32 @@
                     </div>
                     <div>
                         <p class="text-xs uppercase tracking-widest text-slate-500">Tarifa por noche</p>
-                        <p class="mt-1 text-sm font-semibold text-white">@string.Format(culture, "{0:N2} {1}", Model.LodgingNightlyRate, Model.Currency)</p>
+                        <p class="mt-1 text-sm font-semibold text-white">@lodgingNightlyRate</p>
                     </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <p class="text-xs uppercase tracking-widest text-slate-500">Check-in</p>
+                            <p class="mt-1 text-sm font-semibold text-white">@lodgingCheckIn</p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-widest text-slate-500">Check-out</p>
+                            <p class="mt-1 text-sm font-semibold text-white">@lodgingCheckOut</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-widest text-slate-500">Plataforma</p>
+                        <p class="mt-1 text-sm font-semibold text-white">@lodgingPlatform</p>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.LodgingLocationUrl))
+                    {
+                        <div>
+                            <p class="text-xs uppercase tracking-widest text-slate-500">Ubicación</p>
+                            <a href="@Model.LodgingLocationUrl" class="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-brand-200 transition hover:text-brand-50" target="_blank" rel="noopener noreferrer">
+                                Ver en Google Maps
+                                <span aria-hidden="true">↗</span>
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -112,6 +282,7 @@
                             string startTime = upcoming.StartTime.ToString("HH:mm", culture);
                             string endTime = upcoming.EndTime.ToString("HH:mm", culture);
                             string cost = string.Format(culture, "{0:N2} {1}", upcoming.Cost, Model.Currency);
+                            string typeLabel = milestoneTypeLabel(upcoming.Type);
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
                                 <div class="flex items-center justify-between text-xs text-slate-400">
@@ -119,11 +290,132 @@
                                     <span>@startTime — @endTime</span>
                                 </div>
                                 <p class="mt-2 text-sm font-semibold text-white">@upcoming.Title</p>
-                                <p class="text-xs text-brand-200">Coste: @cost</p>
+                                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                                    <span class="rounded-full border border-white/10 px-2 py-1 text-[10px] uppercase tracking-widest text-brand-200">@typeLabel</span>
+                                    <span class="text-brand-200">Coste: @cost</span>
+                                    @if (!string.IsNullOrWhiteSpace(upcoming.LocationUrl))
+                                    {
+                                        <a href="@upcoming.LocationUrl" class="inline-flex items-center gap-1 text-brand-300 hover:text-brand-100" target="_blank" rel="noopener noreferrer">Mapa ↗</a>
+                                    }
+                                </div>
                             </div>
                         }
                     }
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid gap-6 lg:grid-cols-3">
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
+            <h3 class="text-lg font-semibold text-white">Actividades planificadas</h3>
+            <p class="mt-1 text-sm text-slate-400">Consulta tus experiencias confirmadas.</p>
+            <div class="mt-4 space-y-3">
+                @if (!Model.Activities.Any())
+                {
+                    <p class="text-sm text-slate-400">Todavía no hay actividades registradas.</p>
+                }
+                else
+                {
+                    @foreach (ActivityMilestoneViewModel activity in Model.Activities)
+                    {
+                        string activityDate = activity.Date.ToString("dd MMM yyyy", culture);
+                        string activityStart = formatTime(activity.StartTime);
+                        string activityEnd = formatTime(activity.EndTime);
+                        string activityCost = string.Format(culture, "{0:N2} {1}", activity.Cost, Model.Currency);
+                        string duration = activity.DurationHours.HasValue ? string.Concat(activity.DurationHours.Value.ToString("0.##", culture), " h") : "Sin duración";
+
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span>@activityDate</span>
+                                <span>@activityStart — @activityEnd</span>
+                            </div>
+                            <p class="mt-2 text-sm font-semibold text-white">@activity.Title</p>
+                            <p class="text-xs text-slate-400">@duration · @(string.IsNullOrWhiteSpace(activity.Classification) ? "Sin categoría" : activity.Classification)</p>
+                            <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                <span class="text-brand-200">Coste: @activityCost</span>
+                                @if (!string.IsNullOrWhiteSpace(activity.LocationUrl))
+                                {
+                                    <a href="@activity.LocationUrl" class="inline-flex items-center gap-1 text-brand-300 hover:text-brand-100" target="_blank" rel="noopener noreferrer">Mapa ↗</a>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
+            <h3 class="text-lg font-semibold text-white">Alojamientos guardados</h3>
+            <p class="mt-1 text-sm text-slate-400">Sigue tus reservas y plataformas.</p>
+            <div class="mt-4 space-y-3">
+                @if (!Model.Lodgings.Any())
+                {
+                    <p class="text-sm text-slate-400">Añade tu primer alojamiento para comenzar.</p>
+                }
+                else
+                {
+                    @foreach (LodgingMilestoneViewModel lodging in Model.Lodgings)
+                    {
+                        string lodgingDates = string.Concat(lodging.CheckInDate?.ToString("dd MMM", culture) ?? "--", " · ", lodging.CheckOutDate?.ToString("dd MMM", culture) ?? "--");
+                        string lodgingCost = string.Format(culture, "{0:N2} {1}", lodging.Cost, Model.Currency);
+                        string lodgingNight = lodging.NightlyRate.HasValue ? string.Format(culture, "{0:N2} {1}", lodging.NightlyRate.Value, Model.Currency) : "--";
+                        string nights = lodging.Nights.HasValue ? string.Concat(lodging.Nights.Value, lodging.Nights.Value == 1 ? " noche" : " noches") : "Sin noches";
+
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span>@lodgingDates</span>
+                                <span>@nights</span>
+                            </div>
+                            <p class="mt-2 text-sm font-semibold text-white">@lodging.Title</p>
+                            <p class="text-xs text-slate-400">Tarifa media: @lodgingNight</p>
+                            <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                <span class="text-brand-200">Coste: @lodgingCost</span>
+                                @if (!string.IsNullOrWhiteSpace(lodging.BookingPlatform))
+                                {
+                                    <span>Plataforma: @lodging.BookingPlatform</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(lodging.LocationUrl))
+                                {
+                                    <a href="@lodging.LocationUrl" class="inline-flex items-center gap-1 text-brand-300 hover:text-brand-100" target="_blank" rel="noopener noreferrer">Mapa ↗</a>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-lg">
+            <h3 class="text-lg font-semibold text-white">Restaurantes programados</h3>
+            <p class="mt-1 text-sm text-slate-400">Gestiona tus reservas culinarias.</p>
+            <div class="mt-4 space-y-3">
+                @if (!Model.Restaurants.Any())
+                {
+                    <p class="text-sm text-slate-400">Registra tus primeras reservas para verlas aquí.</p>
+                }
+                else
+                {
+                    @foreach (RestaurantMilestoneViewModel restaurant in Model.Restaurants)
+                    {
+                        string reservationDate = restaurant.ReservationDate.HasValue ? restaurant.ReservationDate.Value.ToString("dd MMM yyyy", culture) : "Sin fecha";
+                        string reservationTime = formatTime(restaurant.StartTime);
+                        string restaurantCost = string.Format(culture, "{0:N2} {1}", restaurant.Cost, Model.Currency);
+
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span>@reservationDate</span>
+                                <span>@reservationTime</span>
+                            </div>
+                            <p class="mt-2 text-sm font-semibold text-white">@restaurant.Title</p>
+                            <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                <span class="text-brand-200">Gasto estimado: @restaurantCost</span>
+                                @if (!string.IsNullOrWhiteSpace(restaurant.LocationUrl))
+                                {
+                                    <a href="@restaurant.LocationUrl" class="inline-flex items-center gap-1 text-brand-300 hover:text-brand-100" target="_blank" rel="noopener noreferrer">Mapa ↗</a>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
             </div>
         </div>
     </section>
