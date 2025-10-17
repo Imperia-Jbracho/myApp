@@ -356,11 +356,21 @@ namespace MyApp.Controllers
             List<TravelMilestone> milestoneCopies = travel.Milestones
                 .Select(milestone => new TravelMilestone
                 {
+                    Type = milestone.Type,
                     Date = milestone.Date,
                     StartTime = milestone.StartTime,
                     EndTime = milestone.EndTime,
+                    DurationHours = milestone.DurationHours,
+                    Classification = milestone.Classification,
                     Title = milestone.Title,
-                    Cost = milestone.Cost
+                    LocationUrl = milestone.LocationUrl,
+                    Cost = milestone.Cost,
+                    Nights = milestone.Nights,
+                    CheckInDate = milestone.CheckInDate,
+                    CheckOutDate = milestone.CheckOutDate,
+                    NightlyRate = milestone.NightlyRate,
+                    BookingPlatform = milestone.BookingPlatform,
+                    ReservationDate = milestone.ReservationDate
                 })
                 .ToList();
 

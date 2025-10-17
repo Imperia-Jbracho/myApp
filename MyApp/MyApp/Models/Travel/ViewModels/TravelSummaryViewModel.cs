@@ -17,6 +17,10 @@ namespace MyApp.Models.Travel.ViewModels
 
         public int DurationDays { get; set; }
 
+        public int DaysElapsed { get; set; }
+
+        public int DaysRemaining { get; set; }
+
         public int ActivitiesCount { get; set; }
 
         public decimal TotalCost { get; set; }
@@ -32,6 +36,20 @@ namespace MyApp.Models.Travel.ViewModels
         public string LodgingName { get; set; } = "Sin información";
 
         public decimal LodgingNightlyRate { get; set; }
+
+        public DateOnly? LodgingCheckInDate { get; set; }
+
+        public DateOnly? LodgingCheckOutDate { get; set; }
+
+        public string? LodgingLocationUrl { get; set; }
+
+        public string? LodgingBookingPlatform { get; set; }
+
+        public List<ActivityMilestoneViewModel> Activities { get; set; } = new List<ActivityMilestoneViewModel>();
+
+        public List<LodgingMilestoneViewModel> Lodgings { get; set; } = new List<LodgingMilestoneViewModel>();
+
+        public List<RestaurantMilestoneViewModel> Restaurants { get; set; } = new List<RestaurantMilestoneViewModel>();
 
         public List<UpcomingEventViewModel> UpcomingEvents { get; set; } = new List<UpcomingEventViewModel>();
 
